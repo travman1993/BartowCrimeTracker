@@ -46,7 +46,29 @@
 
         <section id="offender-section" class="tab hidden">
             <h2>Registered Offenders</h2>
-            <div id="offender-list"></div>
+
+            <div class="offender-toolbar">
+                <input id="off-q" type="search" placeholder="Search name or city..." />
+                <select id="off-type">
+                    <option value="">All types</option>
+                    <option value="resident">Resident</option>
+                    <option value="work">Work</option>
+                    <option value="transient">Transient</option>
+                </select>
+                <button id="off-reset">Reset</button>
+                <a id="off-link" href="https://sheriffalerts.com/cap_main.php?office=55013" target="_blank" rel="noopener" class="btn-link">Open Official Bartow Portal</a>
+            </div>
+            <div id="offender-loading class="loading hidden">
+                <div class="spinner"></div>
+                <p>Loading offender data...</p>
+            </div>
+
+            <div id="offender-list" class="offender-list"></div>
+            <div class="offender-pager">
+                <button id="off-prev" disabled>Prev</button>
+                <span id="off-page">Page 1</span>
+                <button id="off-next" disabled>Next</button>
+            </div>
         </section>
 
         <section id="tips-section" class="tab hidden">
@@ -75,6 +97,7 @@
     </footer>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

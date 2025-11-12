@@ -208,12 +208,6 @@ const map = L.map('map', {
     marker.addTo(group);
   });
   
-  // ----- Helper: plot incidents from your data later -----
-  /**
-   * plotIncidents([
-   *   { lat, lng, type: 'violent'|'property'|'other', title, time, addr }
-   * ])
-   */
   function plotIncidents(list) {
     // clear existing
     Object.values(layers).forEach(g => g.clearLayers());
@@ -234,6 +228,105 @@ const map = L.map('map', {
       `).addTo(group);
     });
   }
+
+  /******** Streaming load from /data/sor_latest.csv (Bartow only) ********/
+  async function loadOffenders() {
+    const loader = document.getElementById('offender-loading');
+    const list = document.getElementById('offender-list');
+  
+    // show loader
+    loader?.classList.remove('hidden');
+    list?.classList.add('hidden');
+  
+    OFF_ALL = [];
+    let totalRows = 0;
+    let bartowRows = 0;
+  
+    try {
+      const resp = await fetch('data/sor_latest.csv', { cache: 'no-store' });
+      if (!resp.ok) throw new Error('CSV missing');
+  
+      const csvText = await resp.text();
+  
+      Papa.parse(csvText, {
+        header: true,
+        skipEmptyLines: true,
+        worker: true, // parse in a web worker so UI stays smooth
+        step: (row) => {
+          totalRows++;
+          const mapped = normalizeSorRow(row.data);
+          if (!mapped) return;
+  
+          if ((mapped.county || '').toLowerCase() === 'bartow') {
+            OFF_ALL.push({
+              name: mapped.name,
+              type: mapped.type || 'resident',
+              city: mapped.city,
+              address: mapped.address,
+              risk: mapped.risk,
+              lastVerified: mapped.lastVerified
+            });
+            bartowRows++;
+          }
+          updateOffenderCount(bartowRows, totalRows);
+        },
+        complete: () => {
+          applyOffenderFilters();
+          updateOffenderCount(bartowRows, totalRows);
+          loader?.classList.add('hidden');
+          list?.classList.remove('hidden');
+        },
+        error: () => {
+          throw new Error('Parse failed');
+        }
+      });
+    } catch (err) {
+      console.warn('Falling back to sample JSON:', err);
+      try {
+        const res = await fetch('data/offenders.sample.json', { cache: 'no-store' });
+        OFF_ALL = await res.json();
+        applyOffenderFilters();
+      } catch (e2) {
+        console.error('Fallback failed:', e2);
+      } finally {
+        loader?.classList.add('hidden');
+        list?.classList.remove('hidden');
+      }
+    }
+  }
+  
+
+// Map your CSV headers → our fields (adjust if your sheet uses different names)
+function normalizeSorRow(r) {
+  const lower = {};
+  for (const k in r) lower[k.toLowerCase().trim()] = (r[k] ?? '').toString().trim();
+
+  const name   = lower['name'] || lower['offender name'] || lower['full_name'] || lower['offender'];
+  const addr   = lower['address'] || lower['residential address'] || lower['residence'] || lower['street address'];
+  const city   = lower['city'] || lower['residential city'] || '';
+  const county = lower['county'] || lower['residential county'] || lower['county name'] || '';
+  const risk   = lower['risk level'] || lower['classification'] || lower['tier'] || '';
+  const verified = lower['last verified'] || lower['verification date'] || lower['last update'] || '';
+
+  if (!name || !county) return null;
+
+  return {
+    name: name.toUpperCase(),
+    type: 'resident',
+    city: city.toUpperCase(),
+    county: county.toUpperCase(),
+    address: [addr, city].filter(Boolean).join(', '),
+    risk: risk ? `Level: ${risk}` : 'Level: Unknown',
+    lastVerified: verified || '—'
+  };
+}
+
+// (Optional) counter display — call this from loadOffenders()
+function updateOffenderCount(bartow, total) {
+  const el = document.getElementById('off-page'); // or add a dedicated span
+  if (el) el.textContent = `Bartow: ${bartow.toLocaleString()} (of ${total.toLocaleString()} GA rows)`;
+}
+
   
 
   /*

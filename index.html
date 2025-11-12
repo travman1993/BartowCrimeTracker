@@ -12,6 +12,11 @@
         <p>Stay infroemed. Stay aware. Updated crime and safety data for Bartow County, GA.</p>
     </header>
 
+    <!-- Ad Banner (Top)-->
+    <div class="ad ad-top">
+        <p>Advertisement</p>
+    </div>
+
     <nav>
         <button id="tab-map" tabindex="0" alt="Crime Map">Crime Map</button>
         <button id="tab-offenders" tabindex="1" alt="Registered Offenders">Registered Offenders</button>
@@ -33,11 +38,22 @@
             <h2>Anonymous Community Tips</h2>
             <form id="tip-form">
                 <textarea placeholder="Share a local tip or report..."></textarea>
+
+                <label for="tip-image" class="upload-label">
+                    Attach an image (optional):
+                </label>
+                <input type="file" id="tip-image" accept="image/*"/>
+
                 <button type="submit">Submit Tip</button>
             </form>
             <ul id="tip-feed"></ul>
         </section>
     </main>
+
+    <!-- Ad Banner (Bottom)-->
+    <div class="ad ad-bottom">
+        <p>Advertisement</p>
+    </div>
 
     <footer>
         <p>&copy; 2025 Bartow Crime Tracker | Data from GBI & Public Records</p>

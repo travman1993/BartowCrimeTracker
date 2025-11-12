@@ -1,21 +1,27 @@
 // Tab Switching
 const tabs = {
     map: { btn: document.getElementById('tab-map'), el: document.getElementById('map-section') },
-    offenders: { btn: document.getElementById('tab-offenders'), el: document.getElementById('offender-selection') },
-    tips: { btn: document.getElementById('tab-tips'), el: document.getElementById('tips-sections') }
+    offenders: { btn: document.getElementById('tab-offenders'), el: document.getElementById('offender-section') },
+    tips: { btn: document.getElementById('tab-tips'), el: document.getElementById('tips-section') }
 };
 
 function activateTab(key) {
-    Object.values(tabs).forEach(t => {
-        t.btn.classList.remove('active');
-        t.btn.classList.add('hiddin');
+    Object.values(tabs).forEach(tab => {
+        if (!tab.btn || !tab.el) return;
+        tab.btn.classList.remove('active');
+        tab.el.classList.add('hidden');
     });
-    tabs[key].btn.classList.add('active');
-    tabs[key].el.classList.remove('hidden');
+    const activeTab = tabs[key];
+    if (!activeTab?.btn || !activeTab?.el) return;
+    activeTab.btn.classList.add('active');
+    activeTab.el.classList.remove('hidden');
 }
-tabs.map.btn.addEventListener('click', () => activateTab('map'));
-tabs.offenders.btn.addEventListener('click', () => activateTab('offenders'));
-tabs.tips.btn.addEventListener('click', () => activateTab('tips'));
+if (tabs.map.btn) tabs.map.btn.addEventListener('click', () => activateTab('map'));
+if (tabs.offenders.btn) tabs.offenders.btn.addEventListener('click', () => activateTab('offenders'));
+if (tabs.tips.btn) tabs.tips.btn.addEventListener('click', () => activateTab('tips'));
+
+// Ensure the correct tab is visible on initial load
+activateTab('map');
 
 // Tips image preview
 const fileInput = document.getElementById('tip-image');
@@ -23,17 +29,24 @@ if (fileInput) {
     let preview = document.querySelector('.tip-preview');
     if (!preview) {
         preview = document.createElement('div');
-        prieview.className = 'tip-preview';
+        preview.className = 'tip-preview';
         const img = document.createElement('img');
         preview.appendChild(img);
-        fileInput.insertAdjacentElement('afterend', preview);    
+        fileInput.insertAdjacentElement('afterend', preview);
     }
+
+    const img = preview.querySelector('img');
+
     fileInput.addEventListener('change', () => {
         const file = fileInput.files?.[0];
-        if (!file) { preview.computedStyleMap.display = 'none'; return }
+        if (!file) {
+            preview.style.display = 'none';
+            if (img) img.removeAttribute('src');
+            return;
+        }
         const url = URL.createObjectURL(file);
-        preview.querySelector('img').src = url;
-        preview.computedStyleMap.display = 'block';
+        if (img) img.src = url;
+        preview.style.display = 'block';
     });
 }
 

@@ -18,7 +18,30 @@
         <button id="tab-tips" tabindex="2" alt="Community Tips">Community Tips</button>
     </nav>
 
-    
+    <main id="content">
+        <!-- Map or Tab content will load here.-->
+        <section id="map-section" class="tab active">
+            <div id="map"></div>
+        </section>
+
+        <section id="offender-section" class="tab hidden">
+            <h2>Registered Offenders</h2>
+            <div id="offender-list"></div>
+        </section>
+
+        <section id="tips-section" class="tab hidden">
+            <h2>Anonymous Community Tips</h2>
+            <form id="tip-form">
+                <textarea placeholder="Share a local tip or report..."></textarea>
+                <button type="submit">Submit Tip</button>
+            </form>
+            <ul id="tip-feed"></ul>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Bartow Crime Tracker | Data from GBI & Public Records</p>
+    </footer>
 
     <script src="script.js"/>
 </body>

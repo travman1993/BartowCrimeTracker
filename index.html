@@ -10,9 +10,19 @@
 </head>
 <body>
     <header>
-        <H1>Bartow Crime Tracker</H1>
+        <h1>Bartow Crime Tracker</h1>
         <p>Stay informed. Stay aware. Updated crime and safety data for Bartow County, GA.</p>
     </header>
+      
+      <!-- Add-to-Home-Screen tip (dismissible) -->
+    <div id="a2hs-tip" class="a2hs hidden">
+        <div class="a2hs-text">
+            <strong>Quick access:</strong>
+            <span id="a2hs-instructions">Add this site to your home screen for app-like access.</span>
+        </div>
+        <button id="a2hs-close" aria-label="Dismiss">✕</button>
+    </div>
+      
 
     <!-- Ad Banner (Top)-->
     <div class="ad ad-top">
@@ -28,6 +38,9 @@
     <main id="content">
         <!-- Map or Tab content will load here.-->
         <section id="map-section" class="tab active">
+            <div id="data-stamp" class="data-stamp">
+                Last updated: <span id="stamp-time">-</span> - Source: GBI & public records
+            </div>
             <div id="map"></div>
         </section>
 

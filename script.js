@@ -26,6 +26,41 @@ if (tabs.tips.btn) tabs.tips.btn.addEventListener('click', () => activateTab('ti
 // Ensure the correct tab is visible on initial load
 activateTab('map');
 
+(function setupA2HS() {
+  const bar = document.getElementById('a2hs-tip');
+  const closeBtn = document.getElementById('a2hs-close');
+  const msg = document.getElementById('a2hs-instructions');
+  if (!bar || !closeBtn || !msg) return;
+
+  const DISMISS_KEY = 'bct_a2hs_dismissed';
+  if (localStorage.getItem(DISMISS_KEY) === '1') return;
+
+  // Already installed?
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  if (isStandalone) return;
+
+  const ua = navigator.userAgent.toLowerCase();
+  const isIOS = /iphone|ipad|ipod/.test(ua);
+  const isAndroid = /android/.test(ua);
+
+  if (isIOS) {
+    msg.innerHTML = `On iPhone: tap <strong>Share</strong> → <strong>Add to Home Screen</strong>.`;
+  } else if (isAndroid) {
+    msg.innerHTML = `On Android (Chrome): open menu <strong>⋮</strong> → <strong>Add to Home screen</strong>.`;
+  } else {
+    msg.textContent = 'Add this site to your home screen for app-like access.';
+  }
+
+  // Show the bar
+  bar.classList.remove('hidden');
+
+  closeBtn.addEventListener('click', () => {
+    bar.classList.add('hidden');
+    localStorage.setItem(DISMISS_KEY, '1');
+  });
+})();
+
+
 // Tips image preview
 const fileInput = document.getElementById('tip-image');
 if (fileInput) {
@@ -58,6 +93,32 @@ const map = L.map('map', {
     zoomControl: true,
     attributionControl: true
   });
+
+  // Data timestamp
+  const stampTime = document.getElementById('stamp-time');
+  if (stampTime) {
+    const now = new Date();
+    stampTime.textContent = now.toLocaleString();
+  }
+
+
+  // Recenter control (bottom right)
+  const RecenterControl = L.Control.extend({
+    options: { position: 'bottomright' },
+    onAdd: function() {
+      const div = L.DomUtil.create('div', 'leaflet-control custom');
+      const btn = L.DomUtil.create('button', '', div);
+      btn.textContent = 'Recenter';
+      btn.title = 'Recenter to Bartow County';
+     L.DomEvent.on(btn, 'click', (e) => {
+      L.DomEvent.stopPropagation(e);
+      map.fitBounds(bartowBounds);
+      });
+      return div;
+    }
+  });
+  map.addControl(new RecenterControl());
+
   
   // Base layer (OpenStreetMap)
   const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -95,6 +156,22 @@ const map = L.map('map', {
     property: '#f5b301',  // amber
     other: '#18b2a5'      // teal
   };
+
+  // Legend (bottom left)
+  const LegendControl = L.Control.extend({
+    options: { position: 'bottomleft' },
+    onAdd: function() {
+      const div = L.DomUtil.create('div', 'leaflet-control custom legend');
+      div.innerHTML = `
+        <div class="legend-row"><span class="legend-dot" style="background:${COLORS.violent}"></span><span>Violent</span></div>
+        <div class="legend-row"><span class="legend-dot" style="background:${COLORS.property}"></span><span>Property</span></div>
+        <div class="legend-row"><span class="legend-dot" style="background:${COLORS.other}"></span><span>Other</span></div>
+      `;
+      return div;
+    }
+  });
+  map.addControl(new LegendControl());
+
   
   // Layer groups (so we can toggle categories)
   const layers = {

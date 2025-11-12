@@ -94,6 +94,81 @@ nav button.active {
 .tab.hidden { display: none !important; }
 .tab.active { display: block; }
 
+/* --- Data timestamp bar above the map --- */
+.data-stamp {
+    background: #0e1219;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 8px 12px;
+    color: var(--muted);
+    font-size: .9rem;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  
+  /* --- Leaflet custom controls (legend / recenter) --- */
+  .leaflet-control.custom {
+    background: #0e1219;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    padding: 8px;
+    color: var(--text);
+  }
+  .leaflet-control.custom button {
+    background: linear-gradient(180deg, #1a2735, #16202d);
+    border: 1px solid #304357;
+    color: var(--text);
+    border-radius: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+  }
+  
+  /* legend rows */
+  .legend {
+    min-width: 140px;
+  }
+  .legend-row {
+    display: grid;
+    grid-template-columns: 16px 1fr;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0;
+  }
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 1px solid #0a0f1a;
+  }
+  
+  /* --- Add-to-Home-Screen tip bar --- */
+  .a2hs {
+    max-width: 1100px;
+    margin: 8px auto 0;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #0e1219;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+  .a2hs.hidden { display: none; }
+  .a2hs .a2hs-text { color: var(--muted); font-size: .95rem; }
+  #a2hs-close {
+    margin-left: auto;
+    background: transparent;
+    border: 1px solid #334158;
+    color: var(--muted);
+    border-radius: 8px;
+    padding: 4px 8px;
+    cursor: pointer;
+  }
+  #a2hs-close:hover { color: #cbd3e1; border-color: #3f506e; }
+  
+
 /* ----Map Section---- */
 #map-section {
     display: grid;

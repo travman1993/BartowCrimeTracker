@@ -26,6 +26,15 @@ if (tabs.tips.btn) tabs.tips.btn.addEventListener('click', () => activateTab('ti
 // Ensure the correct tab is visible on initial load
 activateTab('map');
 
+const DEBUG_ON = true;          // so console logs don't crash
+let OFF_ALL = [];               // global holder for offenders
+
+// Simple no-op filter for now (so fallback path doesn’t crash)
+function applyOffenderFilters() {
+  renderOffenders(OFF_ALL);
+}
+
+
 // Load offenders once (first time the tab is opened)
 let offendersLoaded = false;
 function ensureOffendersLoaded() {
@@ -267,6 +276,17 @@ async function fetchSorCsv() {
   throw new Error('sor_latest.csv not found in /data or project root');
 }
 
+
+async function fetchSorCsv() {
+  for (const path of ['data/sor_latest.csv', 'sor_latest.csv']) {
+    try {
+      const r = await fetch(path, { cache: 'no-store' });
+      if (r.ok) return await r.text();
+    } catch {}
+  }
+  throw new Error('sor_latest.csv not found in /data or project root');
+}
+
 async function loadOffenders() {
   const loader = document.getElementById('offender-loading');
   const list   = document.getElementById('offender-list');
@@ -274,7 +294,7 @@ async function loadOffenders() {
   loader?.classList.remove('hidden');
   list?.classList.add('hidden');
 
-  window.OFF_ALL = [];
+  OFF_ALL = [];
   let totalRows = 0;
   let bartowRows = 0;
   let loggedHeader = false;
@@ -286,7 +306,7 @@ async function loadOffenders() {
     Papa.parse(csvText, {
       header: true,
       skipEmptyLines: 'greedy',
-      worker: false,                  // easier to see errors while testing
+      worker: false, // easier debugging
       step: (row) => {
         totalRows++;
         const obj = row.data;
@@ -320,7 +340,7 @@ async function loadOffenders() {
       },
       complete: () => {
         if (DEBUG_ON) console.log('[SOR] complete.', { totalRows, bartowRows });
-        applyOffenderFilters?.();   // if you have filters wired
+        applyOffenderFilters();      // now defined
         renderOffenders(OFF_ALL);
 
         if (!OFF_ALL.length && list) {
@@ -337,9 +357,7 @@ async function loadOffenders() {
         loader?.classList.add('hidden');
         list?.classList.remove('hidden');
       },
-      error: (err) => {
-        throw err || new Error('Papa.parse error');
-      }
+      error: (err) => { throw err || new Error('Papa.parse error'); }
     });
 
   } catch (err) {
@@ -347,7 +365,7 @@ async function loadOffenders() {
     try {
       const res = await fetch('data/offenders.sample.json', { cache: 'no-store' });
       OFF_ALL = await res.json();
-      applyOffenderFilters?.();
+      applyOffenderFilters();
       renderOffenders(OFF_ALL);
     } catch (e2) {
       console.error('[SOR] fallback failed:', e2);
@@ -365,23 +383,42 @@ async function loadOffenders() {
   }
 }
 
+
   
-  function offenderCard(o) {
-    const div = document.createElement('div');
-    div.className = 'offender-card';
-    div.innerHTML = `
-      <div class="title">${o.name ?? ''}</div>
-      <div class="badges">
-        ${o.type ? `<span class="badge badge--info">${o.type}</span>` : ''}
-        ${o.city ? `<span class="badge badge--warn">${o.city}</span>` : ''}
-        ${o.jailed ? `<span class="badge badge--alert">${o.jailed}</span>` : ''}
-        ${o.risk ? `<span class="badge badge--alert">${o.risk}</span>` : ''}
-      </div>
-      <div class="addr">${o.address ?? ''}</div>
-      <div class="meta">County: ${o.county ?? '—'}</div>
-    `;
-    return div;
-  }
+function riskClass(risk = '') {
+  const r = risk.toLowerCase();
+  if (r.includes('level 3') || r.includes('dangerous')) return 'badge--alert';
+  if (r.includes('level 2')) return 'badge--warn';
+  if (r.includes('level 1')) return 'badge--info';
+  return 'badge--warn';
+}
+
+function toTitle(s = '') {
+  return s.replace(/\s+/g,' ').trim()
+          .toLowerCase()
+          .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function offenderCard(o) {
+  const div = document.createElement('div');
+  div.className = 'offender-card';
+  const riskText = o.risk ? `Level : ${o.risk}` : 'Level : Unknown';
+
+  div.innerHTML = `
+    <div class="title">${o.name ?? ''}</div>
+    <div class="badges">
+      ${o.city ? `<span class="badge badge--warn">${o.city}</span>` : ''}
+      ${o.offense ? `<span class="badge badge--info">${toTitle(o.offense)}</span>` : ''}
+      ${o.residency ? `<span class="badge badge--info">${toTitle(o.residency)}</span>` : ''}
+      ${o.jailed ? `<span class="badge badge--alert">${o.jailed}</span>` : ''}
+      <span class="badge ${riskClass(o.risk)}">${riskText}</span>
+    </div>
+    <div class="addr">${o.address ?? ''}</div>
+    <div class="meta">County: ${o.county ?? '—'}</div>
+  `;
+  return div;
+}
+
   
   function renderOffenders(list) {
     const mount = document.getElementById('offender-list');
@@ -394,35 +431,53 @@ async function loadOffenders() {
   
 
 // Map CSV headers → fields
+// Map CSV headers → fields
 function normalizeSorRow(r) {
-  // Name | Sex | Race | DOB | Weight | Number | Address | City | State | Zip | County | Type | Jailed | Risk Level
-  const name   = (r['Name']   || '').trim();
-  const county = (r['County'] || '').trim();
+  const g = k => (r[k] ?? '').toString().trim();
+
+  const name   = g('Name');
+  const county = g('County');
   if (!name || !county) return null;
 
-  const num    = (r['Number'] || '').trim();
-  const street = (r['Address']|| '').trim();
-  const city   = (r['City']   || '').trim();
-  const state  = (r['State']  || '').trim();
-  const zip    = (r['Zip']    || '').trim();
+  // Address pieces
+  const num    = g('Number');
+  const street = g('Address');
+  const city   = g('City');
+  const state  = g('State');   // may be empty
+  const zip    = g('Zip');     // may be empty
 
-  const type   = (r['Type']        || 'resident').trim();
-  const jailed = (r['Jailed']      || '').trim();
-  const risk   = (r['Risk Level']  || '').trim();
+  // Offense text: many sheets use "Type"; some have a second column "Type2"
+  const offense = g('Type2') || g('Type');
 
-  const line1 = [num, street].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+  // Residency tag only if it literally matches one of these
+  const residency = ['resident','work','transient'].includes(offense.toLowerCase())
+    ? offense.toLowerCase()
+    : '';
+
+  const jailedRaw = g('Jailed');
+  const riskRaw   = g('Risk Level');
+
+  // Build address
+  const line1 = [num, street].filter(Boolean).join(' ').replace(/\s+/g,' ').trim();
   const cityStateZip = [city, state, zip].filter(Boolean).join(', ').replace(/,\s*,/g, ', ');
   const fullAddress = [line1, cityStateZip].filter(Boolean).join(', ');
 
+  // Optional meta for later
+  const sex  = g('Sex');
+  const race = g('Race');
+  const dob  = g('DOB');
+  const wt   = g('Weight');
+
   return {
     name: name.toUpperCase(),
-    type: type ? type.toLowerCase() : 'resident',
+    offense,                 // <-- we’ll render this as a pill
+    residency,               // <-- shown if resident/work/transient
     city: city.toUpperCase(),
     county: county.toUpperCase(),
     address: fullAddress,
-    risk: risk ? `Level: ${risk}` : 'Level: Unknown',
-    jailed,
-    lastVerified: '—'
+    jailed: jailedRaw.toUpperCase(),
+    risk: riskRaw,
+    meta: { sex, race, dob, wt }
   };
 }
 

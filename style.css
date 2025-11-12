@@ -195,6 +195,32 @@ nav button.active {
 }
 
 /* ----Offenders---- */
+.offender-card code { color: var(--info); }
+/* Offender list + card baseline */
+#offender-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    min-height: 40px; /* so it occupies space once shown */
+  }
+  
+@media (min-width: 700px) {
+    #offender-list { grid-template-columns: 1fr 1fr; }
+  }
+  
+.offender-card {
+    background: #0e131b;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px;
+    box-shadow: var(--shadow);
+}
+  
+.offender-card .title { font-weight: 700; margin-bottom: 6px; }
+.offender-card .addr  { color: var(--muted); font-size: .95rem; }
+.offender-card .meta  { color: var(--muted); font-size: .85rem; margin-top: 4px; }
+.offender-card .badges { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
+  
 #offender-section, #tips-section {
      background: linear-gradient(180deg, var(--surface), var(--surface-2));
      border: 1px solid var(--border);

@@ -26,6 +26,20 @@ if (tabs.tips.btn) tabs.tips.btn.addEventListener('click', () => activateTab('ti
 // Ensure the correct tab is visible on initial load
 activateTab('map');
 
+// Load offenders once (first time the tab is opened)
+let offendersLoaded = false;
+function ensureOffendersLoaded() {
+  if (offendersLoaded) return;
+  offendersLoaded = true;
+  loadOffenders();
+}
+if (tabs.offenders?.btn) {
+  tabs.offenders.btn.addEventListener('click', ensureOffendersLoaded);
+}
+// (Optional) auto-load if you want it ready without a click:
+// document.addEventListener('DOMContentLoaded', ensureOffendersLoaded);
+
+
 (function setupA2HS() {
   const bar = document.getElementById('a2hs-tip');
   const closeBtn = document.getElementById('a2hs-close');
@@ -230,96 +244,189 @@ const map = L.map('map', {
   }
 
   /******** Streaming load from /data/sor_latest.csv (Bartow only) ********/
-  async function loadOffenders() {
-    const loader = document.getElementById('offender-loading');
-    const list = document.getElementById('offender-list');
+  const REQUIRED_HEADERS = ['Name','Number','Address','City','State','Zip','County','Type','Jailed','Risk Level'];
+  const DEBUG_OFF = true;
   
-    // show loader
-    loader?.classList.remove('hidden');
-    list?.classList.add('hidden');
-  
-    OFF_ALL = [];
-    let totalRows = 0;
-    let bartowRows = 0;
-  
-    try {
-      const resp = await fetch('data/sor_latest.csv', { cache: 'no-store' });
-      if (!resp.ok) throw new Error('CSV missing');
-  
-      const csvText = await resp.text();
-  
-      Papa.parse(csvText, {
-        header: true,
-        skipEmptyLines: true,
-        worker: true, // parse in a web worker so UI stays smooth
-        step: (row) => {
-          totalRows++;
-          const mapped = normalizeSorRow(row.data);
-          if (!mapped) return;
-  
-          if ((mapped.county || '').toLowerCase() === 'bartow') {
-            OFF_ALL.push({
-              name: mapped.name,
-              type: mapped.type || 'resident',
-              city: mapped.city,
-              address: mapped.address,
-              risk: mapped.risk,
-              lastVerified: mapped.lastVerified
-            });
-            bartowRows++;
-          }
-          updateOffenderCount(bartowRows, totalRows);
-        },
-        complete: () => {
-          applyOffenderFilters();
-          updateOffenderCount(bartowRows, totalRows);
-          loader?.classList.add('hidden');
-          list?.classList.remove('hidden');
-        },
-        error: () => {
-          throw new Error('Parse failed');
-        }
-      });
-    } catch (err) {
-      console.warn('Falling back to sample JSON:', err);
+  async function fetchSorCsv() {
+    for (const path of ['data/sor_latest.csv', 'sor_latest.csv']) {
       try {
-        const res = await fetch('data/offenders.sample.json', { cache: 'no-store' });
-        OFF_ALL = await res.json();
-        applyOffenderFilters();
-      } catch (e2) {
-        console.error('Fallback failed:', e2);
-      } finally {
+        const r = await fetch(path, { cache: 'no-store' });
+        if (r.ok) return await r.text();
+      } catch {}
+    }
+    throw new Error('sor_latest.csv not found in /data or project root');
+  }
+
+async function fetchSorCsv() {
+  for (const path of ['data/sor_latest.csv', 'sor_latest.csv']) {
+    try {
+      const r = await fetch(path, { cache: 'no-store' });
+      if (r.ok) return await r.text();
+    } catch {}
+  }
+  throw new Error('sor_latest.csv not found in /data or project root');
+}
+
+async function loadOffenders() {
+  const loader = document.getElementById('offender-loading');
+  const list   = document.getElementById('offender-list');
+
+  loader?.classList.remove('hidden');
+  list?.classList.add('hidden');
+
+  window.OFF_ALL = [];
+  let totalRows = 0;
+  let bartowRows = 0;
+  let loggedHeader = false;
+
+  try {
+    const csvText = await fetchSorCsv();
+    if (DEBUG_ON) console.log('[SOR] first 200 chars:', csvText.slice(0, 200));
+
+    Papa.parse(csvText, {
+      header: true,
+      skipEmptyLines: 'greedy',
+      worker: false,                  // easier to see errors while testing
+      step: (row) => {
+        totalRows++;
+        const obj = row.data;
+
+        if (DEBUG_ON && !loggedHeader) {
+          const keys = Object.keys(obj);
+          console.log('[SOR] header keys:', keys);
+          const missing = REQUIRED_HEADERS.filter(h => !keys.includes(h));
+          if (missing.length) console.warn('[SOR] Missing headers:', missing);
+          loggedHeader = true;
+        }
+
+        const mapped = normalizeSorRow(obj);
+        if (!mapped) return;
+
+        if ((mapped.county || '').toLowerCase().includes('bartow')) {
+          OFF_ALL.push({
+            name: mapped.name,
+            type: mapped.type,
+            city: mapped.city,
+            county: mapped.county,
+            address: mapped.address,
+            risk: mapped.risk,
+            jailed: mapped.jailed,
+            lastVerified: mapped.lastVerified
+          });
+          bartowRows++;
+        }
+
+        updateOffenderCount(bartowRows, totalRows);
+      },
+      complete: () => {
+        if (DEBUG_ON) console.log('[SOR] complete.', { totalRows, bartowRows });
+        applyOffenderFilters?.();   // if you have filters wired
+        renderOffenders(OFF_ALL);
+
+        if (!OFF_ALL.length && list) {
+          list.innerHTML = `
+            <div class="offender-card">
+              <strong>No Bartow rows found.</strong>
+              <div class="tip-meta">
+                Check CSV headers exactly: ${REQUIRED_HEADERS.join(', ')}<br/>
+                And that County column contains “BARTOW”.
+              </div>
+            </div>`;
+        }
+
         loader?.classList.add('hidden');
         list?.classList.remove('hidden');
+      },
+      error: (err) => {
+        throw err || new Error('Papa.parse error');
       }
+    });
+
+  } catch (err) {
+    console.error('[SOR] load error → fallback:', err);
+    try {
+      const res = await fetch('data/offenders.sample.json', { cache: 'no-store' });
+      OFF_ALL = await res.json();
+      applyOffenderFilters?.();
+      renderOffenders(OFF_ALL);
+    } catch (e2) {
+      console.error('[SOR] fallback failed:', e2);
+      if (list) {
+        list.innerHTML = `
+          <div class="offender-card">
+            <strong>Could not load offender data.</strong>
+            <div class="tip-meta">Verify <code>data/sor_latest.csv</code> exists and you’re running a local server.</div>
+          </div>`;
+      }
+    } finally {
+      loader?.classList.add('hidden');
+      list?.classList.remove('hidden');
     }
   }
+}
+
+  
+  function offenderCard(o) {
+    const div = document.createElement('div');
+    div.className = 'offender-card';
+    div.innerHTML = `
+      <div class="title">${o.name ?? ''}</div>
+      <div class="badges">
+        ${o.type ? `<span class="badge badge--info">${o.type}</span>` : ''}
+        ${o.city ? `<span class="badge badge--warn">${o.city}</span>` : ''}
+        ${o.jailed ? `<span class="badge badge--alert">${o.jailed}</span>` : ''}
+        ${o.risk ? `<span class="badge badge--alert">${o.risk}</span>` : ''}
+      </div>
+      <div class="addr">${o.address ?? ''}</div>
+      <div class="meta">County: ${o.county ?? '—'}</div>
+    `;
+    return div;
+  }
+  
+  function renderOffenders(list) {
+    const mount = document.getElementById('offender-list');
+    if (!mount) return;
+    mount.innerHTML = '';
+    if (!list || !list.length) return;
+    list.forEach(o => mount.appendChild(offenderCard(o)));
+  }
+  
   
 
-// Map your CSV headers → our fields (adjust if your sheet uses different names)
+// Map CSV headers → fields
 function normalizeSorRow(r) {
-  const lower = {};
-  for (const k in r) lower[k.toLowerCase().trim()] = (r[k] ?? '').toString().trim();
-
-  const name   = lower['name'] || lower['offender name'] || lower['full_name'] || lower['offender'];
-  const addr   = lower['address'] || lower['residential address'] || lower['residence'] || lower['street address'];
-  const city   = lower['city'] || lower['residential city'] || '';
-  const county = lower['county'] || lower['residential county'] || lower['county name'] || '';
-  const risk   = lower['risk level'] || lower['classification'] || lower['tier'] || '';
-  const verified = lower['last verified'] || lower['verification date'] || lower['last update'] || '';
-
+  // Name | Sex | Race | DOB | Weight | Number | Address | City | State | Zip | County | Type | Jailed | Risk Level
+  const name   = (r['Name']   || '').trim();
+  const county = (r['County'] || '').trim();
   if (!name || !county) return null;
+
+  const num    = (r['Number'] || '').trim();
+  const street = (r['Address']|| '').trim();
+  const city   = (r['City']   || '').trim();
+  const state  = (r['State']  || '').trim();
+  const zip    = (r['Zip']    || '').trim();
+
+  const type   = (r['Type']        || 'resident').trim();
+  const jailed = (r['Jailed']      || '').trim();
+  const risk   = (r['Risk Level']  || '').trim();
+
+  const line1 = [num, street].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+  const cityStateZip = [city, state, zip].filter(Boolean).join(', ').replace(/,\s*,/g, ', ');
+  const fullAddress = [line1, cityStateZip].filter(Boolean).join(', ');
 
   return {
     name: name.toUpperCase(),
-    type: 'resident',
+    type: type ? type.toLowerCase() : 'resident',
     city: city.toUpperCase(),
     county: county.toUpperCase(),
-    address: [addr, city].filter(Boolean).join(', '),
+    address: fullAddress,
     risk: risk ? `Level: ${risk}` : 'Level: Unknown',
-    lastVerified: verified || '—'
+    jailed,
+    lastVerified: '—'
   };
 }
+
+
 
 // (Optional) counter display — call this from loadOffenders()
 function updateOffenderCount(bartow, total) {

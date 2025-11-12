@@ -73,7 +73,7 @@ nav {
 nav button {
     appearance: none;
     border: 1px solid var(--border);
-    color: var(--text);
+    color: black;
     padding: 10px 14px;
     border-radius: 999px;
     font-weight: 600;
@@ -95,3 +95,27 @@ nav button.active {
 .tab.active { display: block; }
 
 /* ----Map Section---- */
+#map-section {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+#map {
+    height: 62vh;
+    min-height: 420px;
+    background: linear-gradient(180deg, #0e1118, #0c1017);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+/* ----side ad shows on wider screens--- */
+@media (min-width: 980px) {
+    #map-section {
+        grid-template-columns: minmax(0, 1fr) 300px;
+        align-items: start;
+    }
+}
+
+/* ----Offenders---- */

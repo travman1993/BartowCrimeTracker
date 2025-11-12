@@ -119,3 +119,158 @@ nav button.active {
 }
 
 /* ----Offenders---- */
+#offender-section, #tips-section {
+     background: linear-gradient(180deg, var(--surface), var(--surface-2));
+     border: 1px solid var(--border);
+     border-radius: var(--radius);
+     box-shadow: var(--shadow);
+     padding: 16px;
+}
+#offender-section h2, #tips-section h2 {
+    margin: 0 0 10px;
+    font-size: 1.1rem;
+    letter-spacing: .2px;
+}
+
+/* ----Community Tips---- */
+#tip-form {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+#tip-form textarea {
+    width: 100%;
+    min-height: 110px;
+    resize: vertical;
+    padding: 12px 12px 14px;
+    color: var(--text);
+    background: #0e121a;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    outline: none;
+}
+#tip-form textarea:focus { border-color: #3a9; box-shadow: 0 0 0 3px rgb(24,178,165,.15); }
+.upload-label {
+    color: var(--muted);
+    font-size: .95rem;
+}
+#trip-image {
+    padding: 10px;
+    background: #0f131c;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--muted);
+}
+
+/* ----Image preview placeholder---- */
+.tip-preview {
+    display: none;
+    margin-top: 4px;
+    border: 1px dashed #3a445a;
+    border-radius: 12px;
+    overflow: hidden;
+}
+.tip-preview img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+#tip-form button[type="submit"] {
+    justify-self: start;
+    padding: 10px 16px;
+    border-radius: 12px;
+    border: 1px solid #304357;
+    background: linear-gradient(180deg, #1a2735, #16202d);
+    color: var(--text);
+    transition: transform .06s ease, box-shadow .2s ease;
+}
+#tip-form button[type="submit"]:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 26px rgba(0,0,0,.25);
+}
+
+/* ----Tip feed items---- */
+#tip-feed {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+}
+#tip-feed li {
+    background: #0e131b;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px;
+    display: grid;
+    gap: 6px;
+}
+.tip-meta {
+    font-size: .85rem;
+    color: var(--muted);
+}
+.tip-actions {
+    display: flex;
+    gap: 10px;
+}
+.tip-actions button {
+    appearance: none;
+    background: transparent;
+    border: 1px solid #334158;
+    color: var(--muted);
+    padding: 6px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+}
+.tip-actions button:hover { border-color: #3f506e; color: #c9d0de;}
+
+/* ----Ads---- */
+.ad {
+    display: grid;
+    place-items: center;
+    color: var(--muted);
+    font-size: .9rem;
+    border: 1px dashed #334159;
+    background: #0e1219;
+    border-radius: var(--radius);
+}
+.ad-top, .ad-bottom {
+    margin: 12px auto;
+    max-width: 1100px;
+    height: 70px; 
+}
+.ad-side {
+    height: 100%;
+    min-height: 320px;
+}
+
+/* ----Hide side ad on small screens---- */
+@media (max-width: 979px) {
+    .ad-side {
+        display: none;
+    }
+}
+
+/* ----Footer---- */
+footer {
+    text-align: center;
+    padding: 22px 12px 40px;
+    color: var(--muted);
+    font-size: .92rem;
+}
+footer a { color: var(--info); text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+
+
+/* ----Utility Pills---- */
+.badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .15px;
+}
+.badge--alert { background: rgba(227,74,74,.12); color: var(--danger); border: 1px solid rgba(227,74,74,.4); }
+.badge--info { background: rgba(24,178,165,.12); color: var(--info); border: 1px solide rgba(24,178,165,.4); }
+.badge--warn { background: rgba(245,179,1,.12); color: var(--accent); border: 1px solid rgba(245,179,1,.4); }

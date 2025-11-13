@@ -37,6 +37,18 @@
 
     <main id="content">
         <!-- Map or Tab content will load here.-->
+        <div id="crime-controls" class="crime-controls">
+            <label for="time-window">Show:</label>
+            <select id="time-window">
+              <option value="60">Last 60 days</option>
+              <option value="30">Last 30 days</option>
+              <option value="7">Last 7 days</option>
+              <option value="1">Last 24 hours</option>
+            </select>
+            <span id="crime-count" class="crime-count"></span>
+          </div>
+          
+
         <section id="map-section" class="tab active">
             <div id="data-stamp" class="data-stamp">
                 Last updated: <span id="stamp-time">-</span> - Source: GBI & public records

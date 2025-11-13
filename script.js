@@ -197,60 +197,13 @@ const map = L.map('map', {
 
   
   // Layer groups (so we can toggle categories)
-  const layers = {
-    Violent: L.layerGroup().addTo(map),
-    Property: L.layerGroup().addTo(map),
-    Other: L.layerGroup().addTo(map)
-  };
+  
   
   // Layer control UI
-  L.control.layers(null, layers, { collapsed: false }).addTo(map);
+
   
-  // ----- Example: add a few sample incidents (remove later) -----
-  const samples = [
-    { type: 'violent',  lat: 34.165, lng: -84.80, title: 'Aggravated Assault', time: '2025-11-10 22:15', addr: 'Near W Main St' },
-    { type: 'property', lat: 34.210, lng: -84.78, title: 'Burglary',           time: '2025-11-10 03:40', addr: 'Old Mill Rd' },
-    { type: 'other',    lat: 34.120, lng: -84.73, title: 'Vandalism',          time: '2025-11-09 19:05', addr: 'Hwy 41' }
-  ];
   
-  samples.forEach(ev => {
-    const group = ev.type === 'violent' ? layers.Violent
-                : ev.type === 'property' ? layers.Property
-                : layers.Other;
-  
-    const marker = L.circleMarker([ev.lat, ev.lng], circle(
-      ev.type === 'violent' ? COLORS.violent :
-      ev.type === 'property' ? COLORS.property :
-      COLORS.other
-    )).bindPopup(`
-      <strong>${ev.title}</strong><br/>
-      <span>${ev.addr}</span><br/>
-      <small>${ev.time}</small>
-    `);
-  
-    marker.addTo(group);
-  });
-  
-  function plotIncidents(list) {
-    // clear existing
-    Object.values(layers).forEach(g => g.clearLayers());
-  
-    list.forEach(ev => {
-      const group = ev.type === 'violent' ? layers.Violent
-                  : ev.type === 'property' ? layers.Property
-                  : layers.Other;
-  
-      L.circleMarker([ev.lat, ev.lng], circle(
-        ev.type === 'violent' ? COLORS.violent :
-        ev.type === 'property' ? COLORS.property :
-        COLORS.other
-      )).bindPopup(`
-        <strong>${ev.title}</strong><br/>
-        <span>${ev.addr ?? ''}</span><br/>
-        <small>${ev.time ?? ''}</small>
-      `).addTo(group);
-    });
-  }
+
 
   /******** Streaming load from /data/sor_latest.csv (Bartow only) ********/
   const REQUIRED_HEADERS = ['Name','Number','Address','City','State','Zip','County','Type','Jailed','Risk Level'];
@@ -325,14 +278,15 @@ async function loadOffenders() {
         if ((mapped.county || '').toLowerCase().includes('bartow')) {
           OFF_ALL.push({
             name: mapped.name,
-            type: mapped.type,
+            offense: mapped.type,
+            typoff: mapped.type,
             city: mapped.city,
             county: mapped.county,
             address: mapped.address,
             risk: mapped.risk,
             jailed: mapped.jailed,
             lastVerified: mapped.lastVerified
-          });
+          });          
           bartowRows++;
         }
 
@@ -402,22 +356,25 @@ function toTitle(s = '') {
 function offenderCard(o) {
   const div = document.createElement('div');
   div.className = 'offender-card';
+
   const riskText = o.risk ? `Level : ${o.risk}` : 'Level : Unknown';
 
   div.innerHTML = `
     <div class="title">${o.name ?? ''}</div>
     <div class="badges">
-      ${o.city ? `<span class="badge badge--warn">${o.city}</span>` : ''}
-      ${o.offense ? `<span class="badge badge--info">${toTitle(o.offense)}</span>` : ''}
-      ${o.residency ? `<span class="badge badge--info">${toTitle(o.residency)}</span>` : ''}
-      ${o.jailed ? `<span class="badge badge--alert">${o.jailed}</span>` : ''}
+      ${ (o.offense || o.type) ? `<span class="badge badge--warn">${toTitle(o.offense || o.type)}</span>` : '' }
+      ${ o.jailed ? `<span class="badge badge--alert">${o.jailed}</span>` : '' }
       <span class="badge ${riskClass(o.risk)}">${riskText}</span>
     </div>
     <div class="addr">${o.address ?? ''}</div>
-    <div class="meta">County: ${o.county ?? '—'}</div>
+    <div class="meta">
+      County: ${o.county ?? '—'}
+      ${o.city ? ` • City: ${o.city}` : ''}
+    </div>
   `;
   return div;
 }
+
 
   
   function renderOffenders(list) {
@@ -426,62 +383,71 @@ function offenderCard(o) {
     mount.innerHTML = '';
     if (!list || !list.length) return;
     list.forEach(o => mount.appendChild(offenderCard(o)));
-  }
-  
-  
 
-// Map CSV headers → fields
+    // --- Search Filter Hook ---
+  const searchInput = document.querySelector('#offender-section input[type="search"]');
+  const typeSelect  = document.querySelector('#offender-section select');
+  const resetBtn    = document.querySelector('#offender-section button[type="reset"]');
+
+  if (searchInput && typeSelect) {
+    function applyOffenderFilters() {
+      const q = searchInput.value.trim().toLowerCase();
+      const t = typeSelect.value.trim().toLowerCase();
+      const filtered = OFF_ALL.filter(o => {
+        const matchText = `${o.name} ${o.city} ${o.county} ${o.address} ${o.offense || ''} ${o.type || ''}`.toLowerCase();
+        const typeMatch = !t || t === 'all' || (o.risk || '').toLowerCase().includes(t);
+        return matchText.includes(q) && typeMatch;
+      });
+      renderOffenders(filtered);
+    }
+
+    searchInput.addEventListener('input', applyOffenderFilters);
+    typeSelect.addEventListener('change', applyOffenderFilters);
+    resetBtn?.addEventListener('click', () => {
+      searchInput.value = '';
+      typeSelect.value = '';
+      renderOffenders(OFF_ALL);
+    });
+  }
+}
+  
+  
 // Map CSV headers → fields
 function normalizeSorRow(r) {
   const g = k => (r[k] ?? '').toString().trim();
 
+  // core fields
   const name   = g('Name');
   const county = g('County');
   if (!name || !county) return null;
 
-  // Address pieces
+  // header typos / variants
+  const state  = g('State') || g('Sate');
+  const zip    = g('Zip') || g('Zip ');
+  const type   = g('Type2') || g('Type') || g('Charge');   // <-- crime text
+  const risk   = g('Risk Level') || g('RiskLevel') || '';
+  const jailed = (g('Jailed') || '').toUpperCase();
+
+  // address
   const num    = g('Number');
   const street = g('Address');
   const city   = g('City');
-  const state  = g('State');   // may be empty
-  const zip    = g('Zip');     // may be empty
-
-  // Offense text: many sheets use "Type"; some have a second column "Type2"
-  const offense = g('Type2') || g('Type');
-
-  // Residency tag only if it literally matches one of these
-  const residency = ['resident','work','transient'].includes(offense.toLowerCase())
-    ? offense.toLowerCase()
-    : '';
-
-  const jailedRaw = g('Jailed');
-  const riskRaw   = g('Risk Level');
-
-  // Build address
-  const line1 = [num, street].filter(Boolean).join(' ').replace(/\s+/g,' ').trim();
+  const line1  = [num, street].filter(Boolean).join(' ').replace(/\s+/g,' ').trim();
   const cityStateZip = [city, state, zip].filter(Boolean).join(', ').replace(/,\s*,/g, ', ');
-  const fullAddress = [line1, cityStateZip].filter(Boolean).join(', ');
-
-  // Optional meta for later
-  const sex  = g('Sex');
-  const race = g('Race');
-  const dob  = g('DOB');
-  const wt   = g('Weight');
+  const fullAddress  = [line1, cityStateZip].filter(Boolean).join(', ');
 
   return {
     name: name.toUpperCase(),
-    offense,                 // <-- we’ll render this as a pill
-    residency,               // <-- shown if resident/work/transient
-    city: city.toUpperCase(),
+    // expose both keys so either renderer style works
+    offense: type,
+    type,                                  // <-- alias for renderer expecting row.type
+    city: (city || '').toUpperCase(),
     county: county.toUpperCase(),
     address: fullAddress,
-    jailed: jailedRaw.toUpperCase(),
-    risk: riskRaw,
-    meta: { sex, race, dob, wt }
+    jailed,
+    risk
   };
 }
-
-
 
 // (Optional) counter display — call this from loadOffenders()
 function updateOffenderCount(bartow, total) {
@@ -727,5 +693,247 @@ if (tipFeed) {
 
     saveTips(TIPS);
     renderTips(TIPS);
+  });
+}
+
+
+/***** Crime Map: fetch, filter, geocode, plot *****/
+
+const CRIME_SOURCE_URL = 'data/crime_last_60d.json'; 
+// ^ Replace with your borough endpoint or CSV parser.
+// If CSV, fetch text and parse with Papa like you do for SOR.
+
+const TIME_WINDOWS = { '60': 60, '30': 30, '7': 7, '1': 1 };
+let CRIME_ALL = [];        // all (<=60d) normalized
+let CRIME_VISIBLE = [];    // filtered by window
+let CURRENT_WINDOW = 60;
+
+const timeSelect = document.getElementById('time-window');
+const crimeCountEl = document.getElementById('crime-count');
+
+// Category color/icon map
+const CAT = {
+  violent:   { color: '#e34a4a', label: 'Violent',  icon: '⚠️' },
+  property:  { color: '#f5b301', label: 'Property', icon: '🏚️' },
+  other:     { color: '#18b2a5', label: 'Other',    icon: '🛈'  }
+};
+
+// helper: choose category from your raw type/title
+function classifyCategory(raw='') {
+  const s = raw.toLowerCase();
+  if (/(assault|robbery|battery|homicide|weapon)/.test(s)) return 'violent';
+  if (/(burglary|theft|larceny|shoplift|vandal)/.test(s))  return 'property';
+  return 'other';
+}
+
+// marker style
+function circleByCat(cat) {
+  const color = (CAT[cat]?.color) || CAT.other.color;
+  return { radius: 8, fillColor: color, color: '#0a0f1a', weight: 1, opacity: 1, fillOpacity: .9 };
+}
+
+// hold markers per category
+const crimeLayers = {
+  Violent: L.layerGroup().addTo(map),
+  Property: L.layerGroup().addTo(map),
+  Other: L.layerGroup().addTo(map)
+};
+
+// swap the previous control (you already added one for samples) or keep:
+L.control.layers(null, crimeLayers, { collapsed: false }).addTo(map);
+
+// ---- Data fetch & normalize ----
+async function fetchCrimeJSON() {
+  const r = await fetch(CRIME_SOURCE_URL, { cache: 'no-store' });
+  if (!r.ok) throw new Error('Crime feed fetch failed');
+  return await r.json();
+}
+
+// If you instead have CSV, do like:
+// const txt = await (await fetch(CRIME_SOURCE_URL)).text();
+// Papa.parse(txt, { header:true, ... step: (row)=>items.push(row.data) })
+
+function normalizeCrimeRow(r) {
+  // Expecting fields; provide aliases/tolerant picks:
+  const id        = String(r.id ?? r.ID ?? '');
+  const when      = new Date(r.occurred_at ?? r.datetime ?? r.date ?? r.time ?? '');
+  if (!id || isNaN(+when)) return null;
+
+  const address   = [r.address, r.addr].find(Boolean) || '';
+  const city      = (r.city || 'Cartersville').toString();
+  const title     = r.title || r.offense || r.type || '';
+  const officer   = r.officer || r.arresting_officer || '';
+  const narrative = r.narrative || r.report || '';
+  const suspect   = r.name || r.suspect || '';
+  const imageUrl  = r.image_url || r.image || '';
+
+  const cat       = classifyCategory(`${title}`);
+
+  // lat/lng optional; may be empty → we’ll geocode
+  const lat = parseFloat(r.lat ?? r.latitude);
+  const lng = parseFloat(r.lng ?? r.longitude);
+
+  return {
+    id, when, address, city, title, officer, narrative, suspect, imageUrl,
+    category: cat,
+    lat: isFinite(lat) ? lat : null,
+    lng: isFinite(lng) ? lng : null,
+    fullAddress: [address, city, 'GA'].filter(Boolean).join(', ')
+  };
+}
+
+// ---- Geocoding (client-side with cache) ----
+// For production use server-side geocoding + cache. This client cache
+// helps dev/test and small volumes. It’s rate-limited and best-effort.
+const GEO_CACHE_KEY = 'bct_geocache_v1';
+let GEO_CACHE = {};
+try { GEO_CACHE = JSON.parse(localStorage.getItem(GEO_CACHE_KEY) || '{}'); } catch {}
+
+function saveGeoCache() {
+  localStorage.setItem(GEO_CACHE_KEY, JSON.stringify(GEO_CACHE));
+}
+
+// You can swap this for your own proxy endpoint.
+// Nominatim works but please respect usage policies and add your server-side proxy later.
+async function geocodeAddress(addr) {
+  if (!addr) return null;
+  const key = addr.toLowerCase();
+  if (GEO_CACHE[key]) return GEO_CACHE[key];
+
+  // Small delay to be polite (also to avoid rate-limit bursts)
+  await new Promise(r => setTimeout(r, 150));
+
+  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addr)}`;
+  const resp = await fetch(url, { headers: { 'Accept': 'application/json' }});
+  if (!resp.ok) return null;
+  const js = await resp.json();
+  const hit = js?.[0];
+  if (!hit) return null;
+
+  const ll = { lat: parseFloat(hit.lat), lng: parseFloat(hit.lon) };
+  if (isFinite(ll.lat) && isFinite(ll.lng)) {
+    GEO_CACHE[key] = ll;
+    saveGeoCache();
+    return ll;
+  }
+  return null;
+}
+
+// batch geocode any missing coordinates (lightweight queue)
+async function ensureCoordinates(items) {
+  for (const rec of items) {
+    if (rec.lat != null && rec.lng != null) continue;
+    const ll = await geocodeAddress(rec.fullAddress);
+    if (ll) { rec.lat = ll.lat; rec.lng = ll.lng; }
+  }
+  return items;
+}
+
+// ---- Plotting ----
+function clearCrimeLayers() {
+  Object.values(crimeLayers).forEach(g => g.clearLayers());
+}
+
+function popupHTML(rec) {
+  const dt = rec.when.toLocaleString();
+  const officer = rec.officer ? `<div class="row"><strong>Officer:</strong> ${rec.officer}</div>` : '';
+  const who = rec.suspect ? `<div class="row"><strong>Name:</strong> ${rec.suspect}</div>` : '';
+  const img = rec.imageUrl ? `<img src="${rec.imageUrl}" alt="Incident photo"/>` : '';
+  const report = rec.narrative ? `<div class="row"><strong>Report:</strong> ${sanitize(rec.narrative)}</div>` : '';
+
+  return `
+    <div class="crime-card">
+      <h4>${sanitize(rec.title) || 'Incident'}</h4>
+      ${who}
+      <div class="row"><strong>When:</strong> ${dt}</div>
+      <div class="row"><strong>Where:</strong> ${sanitize(rec.fullAddress)}</div>
+      ${officer}
+      ${report}
+      ${img}
+    </div>
+  `;
+}
+function sanitize(s=''){ const d=document.createElement('div'); d.textContent=s; return d.textContent; }
+
+function plotCrimes(items) {
+  clearCrimeLayers();
+  if (!items.length) {
+    crimeCountEl && (crimeCountEl.textContent = 'No incidents in window.');
+    return;
+  }
+
+  const bounds = [];
+  items.forEach(rec => {
+    const layer =
+      rec.category === 'violent'  ? crimeLayers.Violent :
+      rec.category === 'property' ? crimeLayers.Property : crimeLayers.Other;
+
+    const m = L.circleMarker([rec.lat, rec.lng], circleByCat(rec.category))
+      .bindPopup(popupHTML(rec));
+
+    m.addTo(layer);
+    bounds.push([rec.lat, rec.lng]);
+  });
+
+  crimeCountEl && (crimeCountEl.textContent = `${items.length.toLocaleString()} incidents`);
+  if (bounds.length) map.fitBounds(bounds, { maxZoom: 15, padding: [20,20] });
+}
+
+// ---- Filtering by time window ----
+function filterByDays(days) {
+  const cutoff = Date.now() - (days * 24 * 60 * 60 * 1000);
+  return CRIME_ALL.filter(rec => rec.when.getTime() >= cutoff && rec.lat != null && rec.lng != null);
+}
+
+async function refreshCrimeData() {
+  // Fetch and normalize only if empty (first load) or you want hard refresh.
+  const raw = await fetchCrimeJSON();
+  const rows = Array.isArray(raw) ? raw : (raw.items || []);
+  CRIME_ALL = rows.map(normalizeCrimeRow).filter(Boolean);
+
+  // Only keep <= 60d
+  const cutoff60 = Date.now() - (60 * 24 * 60 * 60 * 1000);
+  CRIME_ALL = CRIME_ALL.filter(r => r.when.getTime() >= cutoff60);
+
+  // Fill in coordinates where missing
+  await ensureCoordinates(CRIME_ALL);
+
+  // Initial draw
+  CURRENT_WINDOW = parseInt(timeSelect?.value || '60', 10);
+  CRIME_VISIBLE = filterByDays(CURRENT_WINDOW);
+  plotCrimes(CRIME_VISIBLE);
+}
+
+// UI events
+if (timeSelect) {
+  timeSelect.addEventListener('change', () => {
+    CURRENT_WINDOW = parseInt(timeSelect.value, 10);
+    CRIME_VISIBLE = filterByDays(CURRENT_WINDOW);
+    plotCrimes(CRIME_VISIBLE);
+  });
+}
+
+// Kick it off on load
+refreshCrimeData().catch(e => console.error('Crime data load failed:', e));
+
+// ---- Scheduled refresh: twice a day (morning & evening) ----
+// (1) Safety net every 12h
+setInterval(() => refreshCrimeData().catch(()=>{}), 12 * 60 * 60 * 1000);
+
+// (2) Targeted runs at specific local hours (e.g., 6:05 and 20:05)
+scheduleDailyRefresh([ {h:6,m:5}, {h:20,m:5} ], () => refreshCrimeData().catch(()=>{}));
+
+function scheduleDailyRefresh(times, fn) {
+  // Schedule next occurrence for each requested time
+  times.forEach(({h,m}) => {
+    function plan() {
+      const now = new Date();
+      const next = new Date();
+      next.setHours(h, m, 0, 0);
+      if (next <= now) next.setDate(next.getDate() + 1);
+      const delay = next.getTime() - now.getTime();
+      setTimeout(() => { fn(); plan(); }, delay);
+    }
+    plan();
   });
 }

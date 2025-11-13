@@ -142,6 +142,13 @@ nav button.active {
     border-radius: 50%;
     border: 1px solid #0a0f1a;
   }
+
+  .crime-controls { display:flex; gap:.5rem; align-items:center; margin:.5rem 0; }
+  .crime-count { opacity:.8; font-size:.9rem; }
+  .leaflet-popup-content .crime-card h4 { margin:0 0 .25rem; }
+  .leaflet-popup-content .crime-card .row { margin:.2rem 0; }
+  .leaflet-popup-content .crime-card img { max-width:100%; border-radius:8px; margin-top:.35rem; }
+  
   
   /* --- Add-to-Home-Screen tip bar --- */
   .a2hs {

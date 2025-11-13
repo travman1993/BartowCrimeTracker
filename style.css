@@ -1,49 +1,28 @@
-/* Bartow Crime Tracker - Dark UI 
-   Palette: slate/graphite base, 
-   amber(attention), red(alert), teal(info)*/
-
 :root {
-    /* Dark first*/
-    --bg: #0f1115; /* page background */
-    --surface: #151923; /* cards/nav/sections */
-    --surface-2: #1b2030; /* deeper surface */
+    --bg: #0f1115;
+    --surface: #151923;
+    --surface-2: #1b2030;
     --border: #262b3a;
     --text: #e7eaf3;
     --muted: #9aa3b2;
-
-    /* Accents */
-    --accent: #f5b301; /* amber = attention */
-    --danger: #e34a4a; /* red = alerts */
-    --info: #18b2a5; /* teal = info */
-
-    /* Effects */
+    --accent: #f5b301;
+    --danger: #e34a4a;
+    --info: #18b2a5;
     --shadow: 0 10px 30px rgba(0,0,0,.35);
     --radius: 16px;
 }
 
-/* Optional: light fallback if user forces light mode */
-@media (prefers-color-scheme: light) {
-    :root {
-        --bg: #f6f7fb;
-        --surface: #ffffff;
-        --surface-2: #f3f5f9;
-        --border: #dfe3ec;
-        --text: #0f1222;
-        --muted: #5b6270;
-    }
-}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
 
-* { box-sizing: border-box;}
-html, body { height: 100%;}
 body {
-    margin: 0;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: radial-gradient(1200px 800px at 70% -10%, #151a24 0%, var(--bg) 55%) fixed;
     color: var(--text);
     line-height: 1.5;
 }
 
-/* ----Layout---- */
+/* HEADER */
 header {
     padding: 24px 18px 8px;
     text-align: center;
@@ -58,6 +37,34 @@ header p {
     color: var(--muted);
     font-size: 0.95rem;
 }
+
+/* A2HS TIP */
+.a2hs {
+    max-width: 1100px;
+    margin: 8px auto 0;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #0e1219;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+}
+.a2hs.hidden { display: none; }
+.a2hs .a2hs-text { color: var(--muted); font-size: .95rem; }
+#a2hs-close {
+    margin-left: auto;
+    background: transparent;
+    border: 1px solid #334158;
+    color: var(--muted);
+    border-radius: 8px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+#a2hs-close:hover { color: #cbd3e1; border-color: #3f506e; }
+
+/* NAV */
 nav {
     display: flex;
     gap: 8px;
@@ -70,31 +77,74 @@ nav {
     backdrop-filter: saturate(1.2) blur(6px);
     border-bottom: 1px solid var(--border);
 }
-nav button {
+
+.nav-btn {
     appearance: none;
     border: 1px solid var(--border);
-    color: black;
+    color: var(--text);
+    background: var(--surface);
     padding: 10px 14px;
     border-radius: 999px;
     font-weight: 600;
     cursor: pointer;
-    transition: transform .06s ease, border-color .2s ease, background .2s ease;
+    transition: all .2s ease;
 }
-nav button:hover { transform: translateY(-1px); border-color: #3a4256; }
-nav button.active {
+
+.nav-btn:hover {
+    transform: translateY(-1px);
+    border-color: #3a4256;
+}
+
+.nav-btn.active {
     background: linear-gradient(180deg, #21283a, var(--surface-2));
     border-color: #3f4860;
     box-shadow: inset 0 0 0 1px #2b3347, 0 6px 18px rgba(0,0,0,.25);
 }
+
+/* CONTENT */
 #content {
     max-width: 1100px;
     margin: 14px auto 80px;
     padding: 0 12px;
 }
-.tab.hidden { display: none !important; }
-.tab.active { display: block; }
 
-/* --- Data timestamp bar above the map --- */
+.tab {
+    display: none;
+}
+
+.tab.active {
+    display: block;
+}
+
+/* CRIME CONTROLS */
+.crime-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.crime-controls label {
+    font-weight: 600;
+}
+
+.crime-controls select {
+    padding: 8px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    cursor: pointer;
+}
+
+.crime-count {
+    opacity: 0.8;
+    font-size: 0.9rem;
+    color: var(--muted);
+}
+
+/* DATA STAMP */
 .data-stamp {
     background: #0e1219;
     border: 1px solid var(--border);
@@ -102,152 +152,115 @@ nav button.active {
     padding: 8px 12px;
     color: var(--muted);
     font-size: .9rem;
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
-  
-  /* --- Leaflet custom controls (legend / recenter) --- */
-  .leaflet-control.custom {
-    background: #0e1219;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    box-shadow: var(--shadow);
-    padding: 8px;
-    color: var(--text);
-  }
-  .leaflet-control.custom button {
-    background: linear-gradient(180deg, #1a2735, #16202d);
-    border: 1px solid #304357;
-    color: var(--text);
-    border-radius: 8px;
-    padding: 6px 10px;
-    cursor: pointer;
-  }
-  
-  /* legend rows */
-  .legend {
-    min-width: 140px;
-  }
-  .legend-row {
-    display: grid;
-    grid-template-columns: 16px 1fr;
-    align-items: center;
-    gap: 8px;
-    margin: 4px 0;
-  }
-  .legend-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    border: 1px solid #0a0f1a;
-  }
-
-  .crime-controls { display:flex; gap:.5rem; align-items:center; margin:.5rem 0; }
-  .crime-count { opacity:.8; font-size:.9rem; }
-  .leaflet-popup-content .crime-card h4 { margin:0 0 .25rem; }
-  .leaflet-popup-content .crime-card .row { margin:.2rem 0; }
-  .leaflet-popup-content .crime-card img { max-width:100%; border-radius:8px; margin-top:.35rem; }
-  
-  
-  /* --- Add-to-Home-Screen tip bar --- */
-  .a2hs {
-    max-width: 1100px;
-    margin: 8px auto 0;
-    padding: 10px 12px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: #0e1219;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-  }
-  .a2hs.hidden { display: none; }
-  .a2hs .a2hs-text { color: var(--muted); font-size: .95rem; }
-  #a2hs-close {
-    margin-left: auto;
-    background: transparent;
-    border: 1px solid #334158;
-    color: var(--muted);
-    border-radius: 8px;
-    padding: 4px 8px;
-    cursor: pointer;
-  }
-  #a2hs-close:hover { color: #cbd3e1; border-color: #3f506e; }
-  
-
-/* ----Map Section---- */
-#map-section {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 12px;
+    margin-bottom: 12px;
 }
-#map {
-    height: 70vh !important;
-    min-height: 420px !important;
+
+/* MAP */
+#map-container {
+    height: 70vh;
+    min-height: 420px;
     background: linear-gradient(180deg, #0e1118, #0c1017);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
     overflow: hidden;
 }
-.leaflet-container { background: #0c1017; }
 
-/* ----side ad shows on wider screens--- */
-@media (min-width: 980px) {
-    #map-section {
-        grid-template-columns: minmax(0, 1fr) 300px;
-        align-items: start;
-    }
+.leaflet-container {
+    background: #0c1017 !important;
 }
 
-/* ----Offenders---- */
-.offender-card code { color: var(--info); }
-/* Offender list + card baseline */
-#offender-list {
+.leaflet-control.custom {
+    background: #0e1219 !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 10px !important;
+    box-shadow: var(--shadow) !important;
+}
+
+.leaflet-control.custom button {
+    background: linear-gradient(180deg, #1a2735, #16202d) !important;
+    border: 1px solid #304357 !important;
+    color: var(--text) !important;
+    border-radius: 8px !important;
+    padding: 6px 10px !important;
+    cursor: pointer !important;
+    font-weight: 600 !important;
+}
+
+.legend-row {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: 12px;
-    min-height: 40px; /* so it occupies space once shown */
-  }
-  
-@media (min-width: 700px) {
-    #offender-list { grid-template-columns: 1fr 1fr; }
-  }
-  
-.offender-card {
-    background: #0e131b;
+    grid-template-columns: 16px 1fr;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0;
+}
+
+.legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 1px solid #0a0f1a;
+}
+
+/* OFFENDERS */
+#offenders-tab, #tips-tab {
+    background: linear-gradient(180deg, var(--surface), var(--surface-2));
     border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 12px;
+    border-radius: var(--radius);
     box-shadow: var(--shadow);
+    padding: 16px;
 }
-  
-.offender-card .title { font-weight: 700; margin-bottom: 6px; }
-.offender-card .addr  { color: var(--muted); font-size: .95rem; }
-.offender-card .meta  { color: var(--muted); font-size: .85rem; margin-top: 4px; }
-.offender-card .badges { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
-  
-#offender-section, #tips-section {
-     background: linear-gradient(180deg, var(--surface), var(--surface-2));
-     border: 1px solid var(--border);
-     border-radius: var(--radius);
-     box-shadow: var(--shadow);
-     padding: 16px;
-}
-#offender-section h2, #tips-section h2 {
+
+#offenders-tab h2, #tips-tab h2 {
     margin: 0 0 10px;
     font-size: 1.1rem;
-    letter-spacing: .2px;
+    letter-spacing: 0.2px;
 }
+
+.offender-toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.offender-toolbar input,
+.offender-toolbar select {
+    padding: 8px 12px;
+    background: #0e121a;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+}
+
+.offender-toolbar button,
+.btn-link {
+    padding: 8px 12px;
+    background: linear-gradient(180deg, #1a2735, #16202d);
+    border: 1px solid #304357;
+    color: var(--text);
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all .2s ease;
+}
+
+.offender-toolbar button:hover,
+.btn-link:hover {
+    border-color: #3f506e;
+    transform: translateY(-1px);
+}
+
 .loading {
     text-align: center;
     padding: 40px 0;
     color: var(--muted);
     font-size: 0.95rem;
-  }
-  
-  .spinner {
+}
+
+.spinner {
     margin: 0 auto 12px;
     width: 40px;
     height: 40px;
@@ -255,36 +268,112 @@ nav button.active {
     border-top-color: var(--info);
     border-radius: 50%;
     animation: spin 0.9s linear infinite;
-  }
-  
-  @keyframes spin {
+}
+
+@keyframes spin {
     to { transform: rotate(360deg); }
-  }
-  
-  .hidden { display: none !important; }
-  
-/* ----Community Tips---- */
+}
+
+.offender-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+
+@media (min-width: 700px) {
+    .offender-list {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.offender-card {
+    background: #0e131b;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px;
+    box-shadow: var(--shadow);
+}
+
+.offender-card .title {
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.offender-card .addr {
+    color: var(--muted);
+    font-size: 0.95rem;
+}
+
+.offender-card .meta {
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-top: 4px;
+}
+
+.offender-card .badges {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin: 6px 0;
+}
+
+.badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.15px;
+}
+
+.badge--alert {
+    background: rgba(227,74,74,.12);
+    color: #e34a4a;
+    border: 1px solid rgba(227,74,74,.45);
+}
+
+.badge--warn {
+    background: rgba(245,179,1,.12);
+    color: #f5b301;
+    border: 1px solid rgba(245,179,1,.45);
+}
+
+.badge--info {
+    background: rgba(24,178,165,.12);
+    color: #18b2a5;
+    border: 1px solid rgba(24,178,165,.45);
+}
+
+/* TIPS */
 #tip-form {
     display: grid;
     gap: 10px;
     margin-bottom: 14px;
 }
+
 #tip-form textarea {
     width: 100%;
     min-height: 110px;
     resize: vertical;
-    padding: 12px 12px 14px;
+    padding: 12px;
     color: var(--text);
     background: #0e121a;
     border: 1px solid var(--border);
     border-radius: 14px;
     outline: none;
+    font-family: inherit;
 }
-#tip-form textarea:focus { border-color: #3a9; box-shadow: 0 0 0 3px rgba(24,178,165,.15); }
+
+#tip-form textarea:focus {
+    border-color: #3a9;
+    box-shadow: 0 0 0 3px rgba(24,178,165,.15);
+}
+
 .upload-label {
     color: var(--muted);
-    font-size: .95rem;
+    font-size: 0.95rem;
 }
+
 #tip-image {
     padding: 10px;
     background: #0f131c;
@@ -293,19 +382,25 @@ nav button.active {
     color: var(--muted);
 }
 
-/* ----Image preview placeholder---- */
 .tip-preview {
-    display: none;
     margin-top: 4px;
     border: 1px dashed #3a445a;
     border-radius: 12px;
     overflow: hidden;
 }
+
+.tip-preview.hidden {
+    display: none;
+}
+
 .tip-preview img {
     width: 100%;
     height: auto;
     display: block;
+    max-height: 400px;
+    object-fit: contain;
 }
+
 #tip-form button[type="submit"] {
     justify-self: start;
     padding: 10px 16px;
@@ -313,14 +408,16 @@ nav button.active {
     border: 1px solid #304357;
     background: linear-gradient(180deg, #1a2735, #16202d);
     color: var(--text);
-    transition: transform .06s ease, box-shadow .2s ease;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all .2s ease;
 }
+
 #tip-form button[type="submit"]:hover {
     transform: translateY(-1px);
     box-shadow: 0 10px 26px rgba(0,0,0,.25);
 }
 
-/* ----Tip feed items---- */
 #tip-feed {
     list-style: none;
     margin: 0;
@@ -328,22 +425,30 @@ nav button.active {
     display: grid;
     gap: 10px;
 }
+
 #tip-feed li {
     background: #0e131b;
     border: 1px solid var(--border);
     border-radius: 14px;
     padding: 12px;
-    display: grid;
-    gap: 6px;
 }
+
+#tip-feed p {
+    margin: 0 0 8px;
+}
+
 .tip-meta {
-    font-size: .85rem;
+    font-size: 0.85rem;
     color: var(--muted);
+    margin: 8px 0;
 }
+
 .tip-actions {
     display: flex;
     gap: 10px;
+    margin: 8px 0;
 }
+
 .tip-actions button {
     appearance: none;
     background: transparent;
@@ -352,52 +457,68 @@ nav button.active {
     padding: 6px 10px;
     border-radius: 10px;
     cursor: pointer;
+    font-size: 0.85rem;
+    transition: all .2s ease;
 }
-.tip-actions button:hover { border-color: #3f506e; color: #c9d0de;}
 
-/* --- Tip comments --- */
+.tip-actions button:hover {
+    border-color: #3f506e;
+    color: #c9d0de;
+}
+
 .tip-comments {
     margin-top: 8px;
     padding-top: 8px;
     border-top: 1px dashed #2c3446;
+}
+
+.tip-comments h4 {
+    margin: 0 0 8px;
+    font-size: 0.95rem;
+    color: var(--muted);
+}
+
+.comment-list {
     display: grid;
     gap: 8px;
-  }
-  .tip-comments h4 {
-    margin: 0;
-    font-size: .95rem;
-    color: var(--muted);
-  }
-  .comment {
+    margin-bottom: 8px;
+}
+
+.comment {
     background: #0c1119;
     border: 1px solid var(--border);
     border-radius: 10px;
     padding: 8px 10px;
-  }
-  .comment time {
+}
+
+.comment time {
     display: block;
-    font-size: .75rem;
+    font-size: 0.75rem;
     color: var(--muted);
     margin-top: 4px;
-  }
-  .comment-form {
+}
+
+.comment-form {
     display: grid;
     grid-template-columns: 1fr auto;
     gap: 8px;
-  }
-  .comment-form input[type="text"] {
+}
+
+.comment-form input[type="text"] {
     padding: 8px 10px;
     background: #0e121a;
     border: 1px solid var(--border);
     border-radius: 10px;
     color: var(--text);
     outline: none;
-  }
-  .comment-form input[type="text"]:focus {
+}
+
+.comment-form input[type="text"]:focus {
     border-color: #3a9;
     box-shadow: 0 0 0 3px rgba(24,178,165,.15);
-  }
-  .comment-form button {
+}
+
+.comment-form button {
     padding: 8px 12px;
     border-radius: 10px;
     border: 1px solid #304357;
@@ -405,57 +526,48 @@ nav button.active {
     color: var(--text);
     font-weight: 700;
     cursor: pointer;
-  }
-  
+    transition: all .2s ease;
+}
 
-/* ----Ads---- */
+.comment-form button:hover {
+    border-color: #3f506e;
+    transform: translateY(-1px);
+}
+
+/* ADS */
 .ad {
     display: grid;
     place-items: center;
     color: var(--muted);
-    font-size: .9rem;
+    font-size: 0.9rem;
     border: 1px dashed #334159;
     background: #0e1219;
     border-radius: var(--radius);
-}
-.ad-top, .ad-bottom {
     margin: 12px auto;
     max-width: 1100px;
-    height: 70px; 
-}
-.ad-side {
-    height: 100%;
-    min-height: 320px;
 }
 
-/* ----Hide side ad on small screens---- */
-@media (max-width: 979px) {
-    .ad-side {
-        display: none;
-    }
+.ad-top, .ad-bottom {
+    height: 70px;
 }
 
-/* ----Footer---- */
+/* FOOTER */
 footer {
     text-align: center;
     padding: 22px 12px 40px;
     color: var(--muted);
-    font-size: .92rem;
+    font-size: 0.92rem;
 }
-footer a { color: var(--info); text-decoration: none; }
-footer a:hover { text-decoration: underline; }
 
-
-/* ----Utility Pills---- */
-.badge {
-    display: inline-block;
-    padding: 3px 8px;
-    border-radius: 999px;
-    font-size: .75rem;
-    font-weight: 700;
-    letter-spacing: .15px;
+footer a {
+    color: var(--info);
+    text-decoration: none;
 }
-.badge { font-weight: 700; letter-spacing:.15px; }
-.badge--alert { background: rgba(227,74,74,.12); color:#e34a4a; border:1px solid rgba(227,74,74,.45); }
-.badge--warn  { background: rgba(245,179,1,.12); color:#f5b301; border:1px solid rgba(245,179,1,.45); }
-.badge--info  { background: rgba(24,178,165,.12); color:#18b2a5; border:1px solid rgba(24,178,165,.45); }
+
+footer a:hover {
+    text-decoration: underline;
+}
+
+.hidden {
+    display: none !important;
+}

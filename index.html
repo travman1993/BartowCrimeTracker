@@ -6,15 +6,13 @@
     <title>Bartow Crime Tracker</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <link rel="stylesheet" href="style.css" />
-    
 </head>
 <body>
     <header>
         <h1>Bartow Crime Tracker</h1>
         <p>Stay informed. Stay aware. Updated crime and safety data for Bartow County, GA.</p>
     </header>
-      
-      <!-- Add-to-Home-Screen tip (dismissible) -->
+
     <div id="a2hs-tip" class="a2hs hidden">
         <div class="a2hs-text">
             <strong>Quick access:</strong>
@@ -22,43 +20,39 @@
         </div>
         <button id="a2hs-close" aria-label="Dismiss">✕</button>
     </div>
-      
 
-    <!-- Ad Banner (Top)-->
     <div class="ad ad-top">
         <p>Advertisement</p>
     </div>
 
     <nav>
-        <button id="tab-map" tabindex="0" alt="Crime Map">Crime Map</button>
-        <button id="tab-offenders" tabindex="1" alt="Registered Offenders">Registered Offenders</button>
-        <button id="tab-tips" tabindex="2" alt="Community Tips">Community Tips</button>
+        <button id="tab-map" class="nav-btn active" data-tab="map">Crime Map</button>
+        <button id="tab-offenders" class="nav-btn" data-tab="offenders">Registered Offenders</button>
+        <button id="tab-tips" class="nav-btn" data-tab="tips">Community Tips</button>
     </nav>
 
     <main id="content">
-        <!-- Map or Tab content will load here.-->
-        <div id="crime-controls" class="crime-controls">
-            <label for="time-window">Show:</label>
-            <select id="time-window">
-              <option value="60">Last 60 days</option>
-              <option value="30">Last 30 days</option>
-              <option value="7">Last 7 days</option>
-              <option value="1">Last 24 hours</option>
-            </select>
-            <span id="crime-count" class="crime-count"></span>
-          </div>
-          
-
-        <section id="map-section" class="tab active">
-            <div id="data-stamp" class="data-stamp">
+        <!-- MAP TAB -->
+        <section id="map" class="tab active">
+            <div id="crime-controls" class="crime-controls">
+                <label for="time-window">Show:</label>
+                <select id="time-window">
+                  <option value="1">Last 24 hours</option>
+                  <option value="7">Last 7 days</option>
+                  <option value="30">Last 30 days</option>
+                  <option value="60" selected>Last 60 days</option>
+                </select>
+                <span id="crime-count" class="crime-count"></span>
+            </div>
+            <div class="data-stamp">
                 Last updated: <span id="stamp-time">-</span> - Source: GBI & public records
             </div>
-            <div id="map"></div>
+            <div id="map-container"></div>
         </section>
 
-        <section id="offender-section" class="tab hidden">
+        <!-- OFFENDERS TAB -->
+        <section id="offenders-tab" class="tab">
             <h2>Registered Offenders</h2>
-
             <div class="offender-toolbar">
                 <input id="off-q" type="search" placeholder="Search name or city..." />
                 <select id="off-type">
@@ -68,38 +62,31 @@
                     <option value="transient">Transient</option>
                 </select>
                 <button id="off-reset">Reset</button>
-                <a id="off-link" href="https://sheriffalerts.com/cap_main.php?office=55013" target="_blank" rel="noopener" class="btn-link">Open Official Bartow Portal</a>
+                <a id="off-link" href="https://sheriffalerts.com/cap_main.php?office=55013" target="_blank" rel="noopener" class="btn-link">Official Portal</a>
             </div>
             <div id="offender-loading" class="loading hidden">
                 <div class="spinner"></div>
                 <p>Loading offender data...</p>
             </div>
-
             <div id="offender-list" class="offender-list"></div>
-            <div class="offender-pager">
-                <button id="off-prev" disabled>Prev</button>
-                <span id="off-page">Page 1</span>
-                <button id="off-next" disabled>Next</button>
-            </div>
         </section>
 
-        <section id="tips-section" class="tab hidden">
+        <!-- TIPS TAB -->
+        <section id="tips-tab" class="tab">
             <h2>Anonymous Community Tips</h2>
             <form id="tip-form">
-                <textarea placeholder="Share a local tip or report..."></textarea>
-
-                <label for="tip-image" class="upload-label">
-                    Attach an image (optional):
-                </label>
+                <textarea id="tip-text" placeholder="Share a local tip or report..." required></textarea>
+                <label for="tip-image" class="upload-label">Attach an image (optional):</label>
                 <input type="file" id="tip-image" accept="image/*"/>
-
+                <div class="tip-preview hidden">
+                    <img id="tip-preview-img" src="" alt="Preview"/>
+                </div>
                 <button type="submit">Submit Tip</button>
             </form>
             <ul id="tip-feed"></ul>
         </section>
     </main>
 
-    <!-- Ad Banner (Bottom)-->
     <div class="ad ad-bottom">
         <p>Advertisement</p>
     </div>
@@ -110,6 +97,8 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
